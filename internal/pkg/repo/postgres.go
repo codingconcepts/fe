@@ -1,20 +1,21 @@
 package repo
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 
 	"github.com/codingconcepts/fe/internal/pkg/model"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // PostgresRepo provides the necessary functionality for working against a
 // Postgres database.
 type PostgresRepo struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
 // NewPostgresRepo returns a pointer to a new instance of PostgresRepo.
-func NewPostgresRepo(db *sql.DB) *PostgresRepo {
+func NewPostgresRepo(db *pgxpool.Pool) *PostgresRepo {
 	return &PostgresRepo{
 		db: db,
 	}
@@ -46,7 +47,7 @@ func (r *PostgresRepo) GetFunctions() ([]model.Function, error) {
 		AND pn.nspname NOT LIKE 'pg_%'
 		AND pn.nspname != 'information_schema'`
 
-	rows, err := r.db.Query(stmt)
+	rows, err := r.db.Query(context.Background(), stmt)
 	if err != nil {
 		return nil, fmt.Errorf("querying functions: %w", err)
 	}
@@ -54,7 +55,7 @@ func (r *PostgresRepo) GetFunctions() ([]model.Function, error) {
 	var functions []model.Function
 	for rows.Next() {
 		var f model.Function
-		if err = rows.Scan(&f.Name, &f.Language, &f.ReturnType, &f.ArgNames, &f.ArtTypes, &f.FunctionBody); err != nil {
+		if err = rows.Scan(&f.Name, &f.Language, &f.ReturnType, &f.ArgNames, &f.ArgTypes, &f.FunctionBody); err != nil {
 			return nil, fmt.Errorf("scanning function: %w", err)
 		}
 		functions = append(functions, f)

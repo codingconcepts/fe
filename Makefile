@@ -10,3 +10,12 @@ postgres_create:
 
 postgres_shell:
 	PGPASSWORD=password psql -h localhost -p 5432 -d postgres -U postgres
+
+run:
+	go run fe.go postgres go \
+		-u "postgres://postgres:password@localhost:5432/postgres?sslmode=disable" \
+		--go-package db \
+		-o examples/postgres/out.go
+
+clean:
+	docker ps -aq | xargs docker rm -f
