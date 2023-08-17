@@ -3,12 +3,15 @@ package model
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"unicode"
 
 	"github.com/samber/lo"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	pg_query "github.com/pganalyze/pg_query_go/v4"
 )
 
 // Function describes the properties of a database function.
@@ -16,9 +19,123 @@ type Function struct {
 	Name         string
 	Language     string
 	ReturnType   string
+	ReturnsSet   bool
 	ArgNames     []string
 	ArgTypes     []string
 	FunctionBody string
+}
+
+func (f Function) SafeFunctionBody() string {
+	tree, err := pg_query.Parse(f.FunctionBody)
+	if err != nil {
+		log.Fatalf("error parsing query: %v", err)
+	}
+
+	for _, treeStmt := range tree.Stmts {
+		switch stmt := treeStmt.Stmt.Node.(type) {
+		case *pg_query.Node_SelectStmt:
+			f.subSelect(stmt.SelectStmt)
+		case *pg_query.Node_InsertStmt:
+			f.subInsert(stmt.InsertStmt)
+		case *pg_query.Node_UpdateStmt:
+			f.subUpdate(stmt.UpdateStmt)
+		case *pg_query.Node_DeleteStmt:
+			f.subDelete(stmt.DeleteStmt)
+		}
+	}
+
+	newStmt, err := pg_query.Deparse(tree)
+	if err != nil {
+		log.Fatalf("error rebuilding query: %v", err)
+	}
+
+	return subArgNumbers(newStmt)
+}
+
+func (f Function) subSelect(stmt *pg_query.SelectStmt) {
+	if stmt.WhereClause != nil {
+		aexpr := stmt.WhereClause.GetAExpr().Rexpr
+
+		switch x := aexpr.Node.(type) {
+		case *pg_query.Node_ColumnRef:
+			for _, field := range x.ColumnRef.Fields {
+				*field.GetString_() = pg_query.String{Sval: "999999999"}
+			}
+
+		case *pg_query.Node_List:
+			for _, item := range x.List.Items {
+				for _, field := range item.GetColumnRef().Fields {
+					*field.GetString_() = pg_query.String{Sval: "999999999"}
+				}
+			}
+
+		default:
+			log.Fatalf("unsupported type: %T", aexpr.Node)
+		}
+	}
+}
+
+func (f Function) subInsert(stmt *pg_query.InsertStmt) {
+	for _, vl := range stmt.SelectStmt.GetSelectStmt().ValuesLists {
+		for _, i := range vl.GetList().Items {
+			for _, f := range i.GetColumnRef().Fields {
+				*f.GetString_() = pg_query.String{Sval: "999999999"}
+			}
+		}
+	}
+}
+
+func (f Function) subUpdate(stmt *pg_query.UpdateStmt) {
+	targets := stmt.GetTargetList()
+	f.subNodeValues(targets)
+
+	args := stmt.WhereClause.GetBoolExpr().Args
+	for i := range args {
+		rexpr := args[i].GetAExpr().GetRexpr()
+
+		switch x := rexpr.Node.(type) {
+		case *pg_query.Node_AConst:
+			x.AConst.GetSval().Sval = "999999999"
+
+		case *pg_query.Node_ColumnRef:
+			for _, field := range x.ColumnRef.Fields {
+				*field.GetString_() = pg_query.String{Sval: "999999999"}
+			}
+
+		case *pg_query.Node_List:
+			for _, item := range x.List.Items {
+				for _, field := range item.GetColumnRef().Fields {
+					*field.GetString_() = pg_query.String{Sval: "999999999"}
+				}
+			}
+
+		default:
+			log.Fatalf("unimplemented node type: %T", rexpr)
+		}
+	}
+}
+
+func (f Function) subDelete(stmt *pg_query.DeleteStmt) {
+	log.Fatal("delete statements not yet supported")
+}
+
+func (f Function) subNodeValues(nodes []*pg_query.Node) {
+	for i := range nodes {
+		nodes[i].GetResTarget().Val = pg_query.MakeAConstIntNode(999999999, -1)
+	}
+}
+
+func subArgNumbers(stmt string) string {
+	curr := 1
+	next := func(string) string {
+		c := curr
+		curr++
+
+		return fmt.Sprintf("$%d", c)
+	}
+
+	re := regexp.MustCompile(`"?999999999"?`)
+	return re.ReplaceAllStringFunc(stmt, next)
 }
 
 // Args returns something that can be used in code.
@@ -119,6 +236,8 @@ func toGoType(dbType string) string {
 		return "int64"
 	case "date", "timestamp", "timestamptz":
 		return "time.Time"
+	case "record":
+		return "interface{}"
 	default:
 		log.Fatalf("unimplemented type: %s", dbType)
 		return ""
@@ -133,6 +252,8 @@ func defaultValue(dbType string) string {
 		return `0`
 	case "date", "timestamp", "timestamptz":
 		return `time.Time{}`
+	case "record":
+		return `nil`
 	default:
 		log.Fatalf("unimplemented type: %s", dbType)
 		return ""

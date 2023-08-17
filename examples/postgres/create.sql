@@ -17,7 +17,7 @@ LANGUAGE SQL
 AS $$
   SELECT full_name
   FROM person
-  ORDER BY age DESC
+  ORDER BY date_of_birth DESC
   LIMIT 1;
 $$;
 SELECT get_oldest_person();
@@ -31,14 +31,14 @@ AS $$
 $$;
 SELECT people_born_on('1987-01-01');
 
--- CREATE OR REPLACE FUNCTION people_between(id_from UUID, id_to UUID) RETURNS SETOF RECORD
--- LANGUAGE SQL
--- AS $$
---   SELECT id, country, full_name, date_of_birth
---   FROM person
---   WHERE id BETWEEN id_from AND id_to;
--- $$;
--- SELECT people_between('a58933a1-c24f-43d9-bb53-6a1aa3170a12', 'c9661cf0-e0e8-4ddb-9bb7-bfcda1aec90f');
+CREATE OR REPLACE FUNCTION people_between(id_from UUID, id_to UUID) RETURNS SETOF RECORD
+LANGUAGE SQL
+AS $$
+  SELECT id, country, full_name, date_of_birth
+  FROM person
+  WHERE id BETWEEN id_from AND id_to;
+$$;
+SELECT people_between('a58933a1-c24f-43d9-bb53-6a1aa3170a12', 'c9661cf0-e0e8-4ddb-9bb7-bfcda1aec90f');
 
 CREATE OR REPLACE FUNCTION add_person(full_name VARCHAR(255), date_of_birth DATE, country VARCHAR(255)) RETURNS VOID
 LANGUAGE SQL

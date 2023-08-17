@@ -30,14 +30,21 @@ func main() {
 		Use:   "fe",
 		Short: "Extract functions from databases into code",
 	}
+
 	rootCmd.PersistentFlags().StringVarP(&flagURL, "url", "u", "", "full database url/connection string")
 	rootCmd.PersistentFlags().StringVarP(&flagOutputFile, "output", "o", "", "absolute or relative path to the output file")
 	rootCmd.PersistentFlags().StringVar(&flagGoOutputPackage, "go-package", "", "package name of the output Go code")
-	rootCmd.MarkPersistentFlagRequired("url")
-	rootCmd.MarkPersistentFlagRequired("output")
 
 	databaseCmds := databaseCommands(databases, languages)
-	rootCmd.AddCommand(databaseCmds...)
+	versionCmd := &cobra.Command{
+		Use:   "version",
+		Short: "Show the application version",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(version)
+		},
+	}
+
+	rootCmd.AddCommand(append(databaseCmds, versionCmd)...)
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
@@ -71,6 +78,8 @@ func databaseCommands(databases []string, languages []string) []*cobra.Command {
 
 func runCommand(database, language string) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
+		validateFlags()
+
 		// TODO: Implement more repos.
 		db, err := pgxpool.New(context.Background(), flagURL)
 		if err != nil {
@@ -98,5 +107,15 @@ func runCommand(database, language string) func(cmd *cobra.Command, args []strin
 		if err = cg.Generate(functions, file, flagGoOutputPackage); err != nil {
 			log.Fatalf("error generating function file: %v", err)
 		}
+	}
+}
+
+func validateFlags() {
+	if flagURL == "" {
+		log.Fatalf("missing -u / --url flag")
+	}
+
+	if flagOutputFile == "" {
+		log.Fatalf("missing -o / --output flag")
 	}
 }

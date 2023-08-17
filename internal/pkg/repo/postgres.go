@@ -28,6 +28,7 @@ func (r *PostgresRepo) GetFunctions() ([]model.Function, error) {
 		pp.proname AS function_name,
 		pl.lanname AS function_language,
 		pt.typname AS function_return_type,
+		pp.proretset AS function_returns_set,
 		pp.proargnames AS function_argument_names,
 		ARRAY (
 			SELECT pt.typname
@@ -55,7 +56,7 @@ func (r *PostgresRepo) GetFunctions() ([]model.Function, error) {
 	var functions []model.Function
 	for rows.Next() {
 		var f model.Function
-		if err = rows.Scan(&f.Name, &f.Language, &f.ReturnType, &f.ArgNames, &f.ArgTypes, &f.FunctionBody); err != nil {
+		if err = rows.Scan(&f.Name, &f.Language, &f.ReturnType, &f.ReturnsSet, &f.ArgNames, &f.ArgTypes, &f.FunctionBody); err != nil {
 			return nil, fmt.Errorf("scanning function: %w", err)
 		}
 		functions = append(functions, f)

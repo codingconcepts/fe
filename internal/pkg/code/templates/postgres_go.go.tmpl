@@ -1,0 +1,68 @@
+// GENERATED CODE! Don't modify.
+
+package {{.Package}}
+
+import (
+  "context"
+  "fmt"
+	{{ .AdditionalImports }}
+
+  "github.com/jackc/pgx/v5/pgxpool"
+)
+
+// DatabaseFunctions contains your database functions.
+type DatabaseFunctions struct {
+  db *pgxpool.Pool
+}
+
+// NewDatabaseFunctions returns a pointer to a new instance of DatabaseFunctions.
+func NewDatabaseFunctions(db *pgxpool.Pool) *DatabaseFunctions {
+  return &DatabaseFunctions{
+    db: db,
+  }
+}
+
+{{ range .Functions }}
+func (df *DatabaseFunctions) {{.ToPascalCase}} (ctx context.Context {{- if .HasArgs -}}, {{.Args "go"}} {{- end}}) ({{- if .ReturnsValue}}{{.LanguageReturnType "go"}}, {{end -}} error) {
+  const stmt = `{{ .SafeFunctionBody -}}`
+
+  {{if .ReturnsValue -}}
+    {{- /* The function returns a SETOF something; scan all rows. */ -}}
+    {{if .ReturnsSet -}}
+    rows, err := df.db.Query(ctx, stmt {{- if .HasArgs -}}, {{.QueryArgs "go"}} {{- end}})
+    if err != nil {
+      return {{.DefaultReturnValue "go"}}, fmt.Errorf("calling {{.Name}}: %w", err)
+    }
+
+    var results []{{.LanguageReturnType "go"}}
+    for rows.Next() {
+      var result {{.LanguageReturnType "go"}}
+      if err := rows.Scan(&result); err != nil {
+        return {{.DefaultReturnValue "go"}}, fmt.Errorf("calling {{.Name}}: %w", err)
+      }
+      results = append(results, result)
+    }
+
+    return results, nil
+
+    {{- /* The function returns one of something; scan single row. */ -}}
+    {{- else -}}
+    row := df.db.QueryRow(ctx, stmt {{- if .HasArgs -}}, {{.QueryArgs "go"}} {{- end}})
+    
+    var result {{.LanguageReturnType "go"}}
+    if err := row.Scan(&result); err != nil {
+      return {{.DefaultReturnValue "go"}}, fmt.Errorf("calling {{.Name}}: %w", err)
+    }
+
+    return result, nil
+    {{end -}}
+  {{- else -}}
+    _, err := df.db.Exec(ctx, stmt {{- if .HasArgs -}}, {{.QueryArgs "go"}} {{- end}})
+    if err != nil {
+      return fmt.Errorf("calling {{.Name}}: %w", err)
+    }
+
+    return nil
+  {{end -}}
+}
+{{end}}

@@ -1,6 +1,6 @@
 // GENERATED CODE! Don't modify.
 
-package db
+package repo
 
 import (
 	"context"
@@ -15,46 +15,48 @@ type DatabaseFunctions struct {
 	db *pgxpool.Pool
 }
 
-func (df *DatabaseFunctions) GetOldestPerson(ctx context.Context) (string, error) {
-	const stmt = `
-  SELECT full_name
-  FROM person
-  ORDER BY age DESC
-  LIMIT 1;
-`
-
-	row := df.db.QueryRow(ctx, stmt)
-
-	var val string
-	if err := row.Scan(&val); err != nil {
-		return "", fmt.Errorf("calling get_oldest_person: %w", err)
+// NewDatabaseFunctions returns a pointer to a new instance of DatabaseFunctions.
+func NewDatabaseFunctions(db *pgxpool.Pool) *DatabaseFunctions {
+	return &DatabaseFunctions{
+		db: db,
 	}
-
-	return val, nil
 }
 
 func (df *DatabaseFunctions) PeopleBornOn(ctx context.Context, d time.Time) (int64, error) {
-	const stmt = `
-  SELECT count(*)
-  FROM person
-  WHERE date_of_birth = d;
-`
+	const stmt = `SELECT count(*) FROM person WHERE date_of_birth = $1`
 
 	row := df.db.QueryRow(ctx, stmt, d)
 
-	var val int64
-	if err := row.Scan(&val); err != nil {
+	var result int64
+	if err := row.Scan(&result); err != nil {
 		return 0, fmt.Errorf("calling people_born_on: %w", err)
 	}
 
-	return val, nil
+	return result, nil
+}
+
+func (df *DatabaseFunctions) PeopleBetween(ctx context.Context, idFrom string, idTo string) (interface{}, error) {
+	const stmt = `SELECT id, country, full_name, date_of_birth FROM person WHERE id BETWEEN $1 AND $2`
+
+	rows, err := df.db.Query(ctx, stmt, idFrom, idTo)
+	if err != nil {
+		return nil, fmt.Errorf("calling people_between: %w", err)
+	}
+
+	var results []interface{}
+	for rows.Next() {
+		var result interface{}
+		if err := rows.Scan(&result); err != nil {
+			return nil, fmt.Errorf("calling people_between: %w", err)
+		}
+		results = append(results, result)
+	}
+
+	return results, nil
 }
 
 func (df *DatabaseFunctions) AddPerson(ctx context.Context, fullName string, dateOfBirth time.Time, country string) error {
-	const stmt = `
-  INSERT INTO person (full_name, date_of_birth, country) VALUES
-    (full_name, date_of_birth, country);
-`
+	const stmt = `INSERT INTO person (full_name, date_of_birth, country) VALUES ($1, $2, $3)`
 
 	_, err := df.db.Exec(ctx, stmt, fullName, dateOfBirth, country)
 	if err != nil {
@@ -62,4 +64,17 @@ func (df *DatabaseFunctions) AddPerson(ctx context.Context, fullName string, dat
 	}
 
 	return nil
+}
+
+func (df *DatabaseFunctions) GetOldestPerson(ctx context.Context) (string, error) {
+	const stmt = `SELECT full_name FROM person ORDER BY date_of_birth DESC LIMIT 1`
+
+	row := df.db.QueryRow(ctx, stmt)
+
+	var result string
+	if err := row.Scan(&result); err != nil {
+		return "", fmt.Errorf("calling get_oldest_person: %w", err)
+	}
+
+	return result, nil
 }

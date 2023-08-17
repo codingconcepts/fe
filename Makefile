@@ -14,8 +14,11 @@ postgres_shell:
 run:
 	go run fe.go postgres go \
 		-u "postgres://postgres:password@localhost:5432/postgres?sslmode=disable" \
-		--go-package db \
+		--go-package repo \
 		-o examples/postgres/out.go
+
+harness:
+	go run examples/harness.go
 
 clean:
 	docker ps -aq | xargs docker rm -f

@@ -2,6 +2,7 @@ SELECT
   pp.proname AS function_name,
   pl.lanname AS function_language,
   pt.typname AS function_return_type,
+  pp.proretset AS function_returns_set,
   pp.proargnames AS function_argument_names,
   ARRAY (
     SELECT pt.typname

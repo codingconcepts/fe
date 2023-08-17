@@ -12,7 +12,7 @@ import (
 	"github.com/samber/lo"
 )
 
-//go:embed templates/postgres_go.tmpl
+//go:embed templates/postgres_go.go.tmpl
 var goTemplate string
 
 // GoCodeGenerator is a Go-specific implementation of CodeGenerator.
