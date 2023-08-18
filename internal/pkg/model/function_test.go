@@ -81,6 +81,11 @@ func TestSafeFunctionBody(t *testing.T) {
 			inputStatement:     "INSERT INTO t (a, b, c) VALUES (1, 2, 3), (4, 5, 6)",
 			expOutputStatement: "INSERT INTO t (a, b, c) VALUES ($1, $2, $3), ($4, $5, $6)",
 		},
+		{
+			name:               "update",
+			inputStatement:     "UPDATE t SET a = 1, b = 2, c = '3' WHERE d = 4",
+			expOutputStatement: "UPDATE t SET a = $1, b = $2, c = $3 WHERE d = $4",
+		},
 	}
 
 	for _, c := range cases {

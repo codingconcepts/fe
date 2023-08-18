@@ -59,33 +59,7 @@ func (f Function) SafeFunctionBody() string {
 
 func (f Function) subSelect(stmt *pg_query.SelectStmt) {
 	if stmt.WhereClause != nil {
-		node := stmt.WhereClause.Node
-		if aexpr := stmt.WhereClause.GetAExpr(); aexpr != nil {
-			node = aexpr.Rexpr.Node
-		}
-
-		// TODO: DRY this out.
-		switch x := node.(type) {
-		case *pg_query.Node_BoolExpr:
-			for _, arg := range x.BoolExpr.Args {
-				subNode(arg.GetAExpr().Rexpr)
-			}
-
-		case *pg_query.Node_ColumnRef:
-			for _, field := range x.ColumnRef.Fields {
-				*field.GetString_() = pg_query.String{Sval: "999999999"}
-			}
-
-		case *pg_query.Node_List:
-			for _, item := range x.List.Items {
-				for _, field := range item.GetColumnRef().Fields {
-					*field.GetString_() = pg_query.String{Sval: "999999999"}
-				}
-			}
-
-		default:
-			log.Fatalf("unsupported type: %T", node)
-		}
+		subNode(stmt.WhereClause)
 	}
 }
 
@@ -99,31 +73,10 @@ func (f Function) subInsert(stmt *pg_query.InsertStmt) {
 
 func (f Function) subUpdate(stmt *pg_query.UpdateStmt) {
 	targets := stmt.GetTargetList()
-	f.subNodeValues(targets)
+	subNodes(targets)
 
-	args := stmt.WhereClause.GetBoolExpr().Args
-	for i := range args {
-		rexpr := args[i].GetAExpr().GetRexpr()
-
-		switch x := rexpr.Node.(type) {
-		case *pg_query.Node_AConst:
-			x.AConst.GetSval().Sval = "999999999"
-
-		case *pg_query.Node_ColumnRef:
-			for _, field := range x.ColumnRef.Fields {
-				*field.GetString_() = pg_query.String{Sval: "999999999"}
-			}
-
-		case *pg_query.Node_List:
-			for _, item := range x.List.Items {
-				for _, field := range item.GetColumnRef().Fields {
-					*field.GetString_() = pg_query.String{Sval: "999999999"}
-				}
-			}
-
-		default:
-			log.Fatalf("unimplemented node type: %T", rexpr)
-		}
+	if stmt.WhereClause != nil {
+		subNode(stmt.WhereClause)
 	}
 }
 
@@ -133,10 +86,14 @@ func (f Function) subDelete(stmt *pg_query.DeleteStmt) {
 
 func subNode(n *pg_query.Node) {
 	switch x := n.Node.(type) {
-	case *pg_query.Node_ColumnRef:
-		for _, f := range x.ColumnRef.Fields {
-			subNode(f)
+	case *pg_query.Node_BoolExpr:
+		for _, arg := range x.BoolExpr.Args {
+			subNode(arg.GetAExpr().Rexpr)
 		}
+	case *pg_query.Node_ColumnRef:
+		subNodes(x.ColumnRef.Fields)
+	case *pg_query.Node_ResTarget:
+		subNode(x.ResTarget.Val)
 	case *pg_query.Node_AConst:
 		switch x.AConst.Val.(type) {
 		case *pg_query.A_Const_Sval:
@@ -144,10 +101,10 @@ func subNode(n *pg_query.Node) {
 		case *pg_query.A_Const_Ival:
 			x.AConst.Val = &pg_query.A_Const_Ival{Ival: &pg_query.Integer{Ival: 999999999}}
 		}
+	case *pg_query.Node_AExpr:
+		subNode(x.AExpr.Rexpr)
 	case *pg_query.Node_List:
-		for _, l := range x.List.Items {
-			subNode(l)
-		}
+		subNodes(x.List.Items)
 	case *pg_query.Node_String_:
 		*n.GetString_() = pg_query.String{Sval: "999999999"}
 	case *pg_query.Node_Integer:
@@ -155,9 +112,9 @@ func subNode(n *pg_query.Node) {
 	}
 }
 
-func (f Function) subNodeValues(nodes []*pg_query.Node) {
-	for i := range nodes {
-		nodes[i].GetResTarget().Val = pg_query.MakeAConstIntNode(999999999, -1)
+func subNodes(nodes []*pg_query.Node) {
+	for _, n := range nodes {
+		subNode(n)
 	}
 }
 
