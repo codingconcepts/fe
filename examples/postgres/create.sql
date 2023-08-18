@@ -40,6 +40,15 @@ AS $$
 $$;
 SELECT people_between('a58933a1-c24f-43d9-bb53-6a1aa3170a12', 'c9661cf0-e0e8-4ddb-9bb7-bfcda1aec90f');
 
+CREATE OR REPLACE FUNCTION person_by_id(id UUID) RETURNS RECORD
+LANGUAGE SQL
+AS $$
+  SELECT id, country, full_name, date_of_birth
+  FROM person
+  WHERE id = id;
+$$;
+SELECT person_by_id('a58933a1-c24f-43d9-bb53-6a1aa3170a12');
+
 CREATE OR REPLACE FUNCTION add_person(full_name VARCHAR(255), date_of_birth DATE, country VARCHAR(255)) RETURNS VOID
 LANGUAGE SQL
 AS $$

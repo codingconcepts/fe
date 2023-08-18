@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -43,13 +44,9 @@ func (df *DatabaseFunctions) PeopleBetween(ctx context.Context, idFrom string, i
 		return nil, fmt.Errorf("calling people_between: %w", err)
 	}
 
-	var results []interface{}
-	for rows.Next() {
-		var result interface{}
-		if err := rows.Scan(&result); err != nil {
-			return nil, fmt.Errorf("calling people_between: %w", err)
-		}
-		results = append(results, result)
+	results, err := scan(rows)
+	if err != nil {
+		return nil, fmt.Errorf("calling people_between: %w", err)
 	}
 
 	return results, nil
@@ -77,4 +74,48 @@ func (df *DatabaseFunctions) GetOldestPerson(ctx context.Context) (string, error
 	}
 
 	return result, nil
+}
+
+func (df *DatabaseFunctions) PersonById(ctx context.Context, id string) (interface{}, error) {
+	const stmt = `SELECT id, country, full_name, date_of_birth FROM person WHERE id = $1`
+
+	row := df.db.QueryRow(ctx, stmt, id)
+
+	var result interface{}
+	if err := row.Scan(&result); err != nil {
+		return nil, fmt.Errorf("calling person_by_id: %w", err)
+	}
+
+	return result, nil
+}
+
+func scan(rows pgx.Rows) ([]map[string]any, error) {
+	fields := rows.FieldDescriptions()
+
+	var values []map[string]any
+	for rows.Next() {
+		scans := make([]any, len(fields))
+		row := make(map[string]any)
+
+		for i := range scans {
+			scans[i] = &scans[i]
+		}
+
+		if err := rows.Scan(scans...); err != nil {
+			return nil, fmt.Errorf("scaning values: %w", err)
+		}
+
+		for i, v := range scans {
+			if v != nil {
+				if fields[i].DataTypeOID == 2950 {
+					b := v.([16]byte)
+					v = fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+				}
+				row[fields[i].Name] = v
+			}
+		}
+		values = append(values, row)
+	}
+
+	return values, nil
 }

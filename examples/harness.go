@@ -34,6 +34,12 @@ func main() {
 	}
 	log.Printf("people born on: %d", count)
 
+	byID, err := df.PersonById(context.Background(), "a58933a1-c24f-43d9-bb53-6a1aa3170a12")
+	if err != nil {
+		log.Fatalf("error getting person by id: %v", err)
+	}
+	log.Println(byID)
+
 	between, err := df.PeopleBetween(context.Background(), "a58933a1-c24f-43d9-bb53-6a1aa3170a12", "d86506a2-e186-4b89-97be-3294cb86d53a")
 	if err != nil {
 		log.Fatalf("error getting people born between: %v", err)
