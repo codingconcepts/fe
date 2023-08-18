@@ -34,3 +34,8 @@ $ fe postgres go \
 ```
 
 ### Todos
+
+* MySQL function extraction
+* Oracle function extraction
+* SQL Server function extraction
+* Sybase function extraction
