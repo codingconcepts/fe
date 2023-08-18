@@ -123,6 +123,13 @@ func TestArgs(t *testing.T) {
 			expArgsOut: "a string",
 		},
 		{
+			name:       "single arg json",
+			lang:       "go",
+			argNames:   []string{"a"},
+			argTypes:   []string{"json"},
+			expArgsOut: "a string",
+		},
+		{
 			name:       "single arg int",
 			lang:       "go",
 			argNames:   []string{"a"},
@@ -186,13 +193,6 @@ func TestArgs(t *testing.T) {
 			expArgsOut: "a bool",
 		},
 		{
-			name:       "single arg json",
-			lang:       "go",
-			argNames:   []string{"a"},
-			argTypes:   []string{"json"},
-			expArgsOut: "a string",
-		},
-		{
 			name:       "single arg date",
 			lang:       "go",
 			argNames:   []string{"a"},
@@ -244,100 +244,111 @@ func TestArgs(t *testing.T) {
 
 func TestDefaultValue(t *testing.T) {
 	cases := []struct {
-		name       string
-		lang       string
-		argNames   []string
-		argTypes   []string
-		expArgsOut string
+		name        string
+		lang        string
+		set         bool
+		types       []string
+		expDefaults []string
 	}{
 		{
-			name:       "single arg varchar",
-			lang:       "go",
-			argNames:   []string{"a"},
-			argTypes:   []string{"varchar"},
-			expArgsOut: "a string",
+			name: "go default scalar values",
+			lang: "go",
+			set:  false,
+			types: []string{
+				"varchar",
+				"uuid",
+				"json",
+				"int",
+				"int2",
+				"int4",
+				"int8",
+				"numeric",
+				"float4",
+				"float8",
+				"money",
+				"bool",
+				"date",
+				"timestamp",
+				"timestamptz",
+				"record",
+			},
+			expDefaults: []string{
+				`""`,
+				`""`,
+				`""`,
+				`0`,
+				`0`,
+				`0`,
+				`0`,
+				`0`,
+				`0`,
+				`0`,
+				`0`,
+				`false`,
+				`time.Time{}`,
+				`time.Time{}`,
+				`time.Time{}`,
+				`nil`,
+			},
 		},
 		{
-			name:       "single arg uuid",
-			lang:       "go",
-			argNames:   []string{"a"},
-			argTypes:   []string{"uuid"},
-			expArgsOut: "a string",
-		},
-		{
-			name:       "single arg int",
-			lang:       "go",
-			argNames:   []string{"a"},
-			argTypes:   []string{"int"},
-			expArgsOut: "a int64",
-		},
-		{
-			name:       "single arg int2",
-			lang:       "go",
-			argNames:   []string{"a"},
-			argTypes:   []string{"int2"},
-			expArgsOut: "a int64",
-		},
-		{
-			name:       "single arg int4",
-			lang:       "go",
-			argNames:   []string{"a"},
-			argTypes:   []string{"int4"},
-			expArgsOut: "a int64",
-		},
-		{
-			name:       "single arg int8",
-			lang:       "go",
-			argNames:   []string{"a"},
-			argTypes:   []string{"int8"},
-			expArgsOut: "a int64",
-		},
-		{
-			name:       "single arg date",
-			lang:       "go",
-			argNames:   []string{"a"},
-			argTypes:   []string{"date"},
-			expArgsOut: "a time.Time",
-		},
-		{
-			name:       "single arg timestamp",
-			lang:       "go",
-			argNames:   []string{"a"},
-			argTypes:   []string{"timestamp"},
-			expArgsOut: "a time.Time",
-		},
-		{
-			name:       "single arg timestamptz",
-			lang:       "go",
-			argNames:   []string{"a"},
-			argTypes:   []string{"timestamptz"},
-			expArgsOut: "a time.Time",
-		},
-		{
-			name:       "single arg record",
-			lang:       "go",
-			argNames:   []string{"a"},
-			argTypes:   []string{"record"},
-			expArgsOut: "a map[string]any",
-		},
-		{
-			name:       "multiple args",
-			lang:       "go",
-			argNames:   []string{"a", "b", "c"},
-			argTypes:   []string{"uuid", "int", "date"},
-			expArgsOut: "a string, b int64, c time.Time",
+			name: "go default set values",
+			lang: "go",
+			set:  true,
+			types: []string{
+				"varchar",
+				"uuid",
+				"json",
+				"int",
+				"int2",
+				"int4",
+				"int8",
+				"numeric",
+				"float4",
+				"float8",
+				"money",
+				"bool",
+				"date",
+				"timestamp",
+				"timestamptz",
+				"record",
+			},
+			expDefaults: []string{
+				`nil`,
+				`nil`,
+				`nil`,
+				`nil`,
+				`nil`,
+				`nil`,
+				`nil`,
+				`nil`,
+				`nil`,
+				`nil`,
+				`nil`,
+				`nil`,
+				`nil`,
+				`nil`,
+				`nil`,
+				`nil`,
+			},
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			f := Function{
-				ArgNames: c.argNames,
-				ArgTypes: c.argTypes,
+			if len(c.types) != len(c.expDefaults) {
+				t.Fatalf("mismatched type and assertion lengths")
 			}
 
-			act := f.Args(c.lang)
-			assert.Equal(t, c.expArgsOut, act)
+			for i := 0; i < len(c.types); i++ {
+				f := Function{
+					ReturnsSet: c.set,
+					ReturnType: c.types[i],
+				}
+
+				act := f.DefaultReturnValue(c.lang)
+				assert.Equal(t, c.expDefaults[i], act)
+			}
 		})
 	}
 }

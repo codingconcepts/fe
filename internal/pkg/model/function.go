@@ -247,10 +247,12 @@ func (f Function) defaultValueGo(dbType string) string {
 	}
 
 	switch strings.ToLower(dbType) {
-	case "uuid", "varchar":
+	case "uuid", "varchar", "json":
 		return `""`
-	case "int", "int2", "int4", "int8", "float", "decimal":
+	case "int", "int2", "int4", "int8", "float4", "float8", "numeric", "money":
 		return `0`
+	case "bool":
+		return `false`
 	case "date", "timestamp", "timestamptz":
 		return `time.Time{}`
 	case "record":
