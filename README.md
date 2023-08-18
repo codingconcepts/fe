@@ -1,10 +1,28 @@
 # fe
 Export functions out of databases and into code
 
-### Workflow
+### Usage
 
 ``` sh
-$ fe [database] [language] args
+$ fe
+Extract functions from databases into code
+
+Usage:
+  fe [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  postgres    extract from postgres
+  version     Show the application version
+
+Flags:
+      --go-package string   package name of the output Go code
+  -h, --help                help for fe
+  -o, --output string       absolute or relative path to the output file
+  -u, --url string          full database url/connection string
+
+Use "fe [command] --help" for more information about a command.
 ```
 
 So, for example, to create Go code from the functions in a Postgres database:
