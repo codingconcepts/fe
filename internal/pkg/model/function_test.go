@@ -86,6 +86,11 @@ func TestSafeFunctionBody(t *testing.T) {
 			inputStatement:     "UPDATE t SET a = 1, b = 2, c = '3' WHERE d = 4",
 			expOutputStatement: "UPDATE t SET a = $1, b = $2, c = $3 WHERE d = $4",
 		},
+		{
+			name:               "delete",
+			inputStatement:     "DELETE FROM person WHERE full_name = full_name",
+			expOutputStatement: "DELETE FROM person WHERE full_name = $1",
+		},
 	}
 
 	for _, c := range cases {

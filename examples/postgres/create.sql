@@ -73,18 +73,9 @@ $$;
 SELECT add_person('new person', '2000-01-01', 'us');
 
 
-CREATE OR REPLACE FUNCTION all_data_types(
-  a smallint,
-  b integer,
-  c bigint,
-  d decimal,
-  e numeric,
-  f real,
-  g double precision,
-  h money,
-  i boolean,
-  j json
-) RETURNS VOID LANGUAGE SQL
+CREATE OR REPLACE FUNCTION delete_person(full_name VARCHAR) RETURNS VOID
+LANGUAGE SQL
 AS $$
-  
+  DELETE FROM person WHERE full_name = full_name;
 $$;
+SELECT delete_person('new person');

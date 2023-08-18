@@ -63,4 +63,9 @@ func main() {
 	for _, name := range namesBetween {
 		log.Println(name)
 	}
+
+	log.Println("\nDeletePerson")
+	if err = df.DeletePerson(context.Background(), "Rob Reid"); err != nil {
+		log.Fatalf("error deleting person: %v", err)
+	}
 }

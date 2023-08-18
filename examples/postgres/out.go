@@ -144,6 +144,17 @@ func (df *DatabaseFunctions) AllDataTypes(ctx context.Context, a int64, b int64,
 	return nil
 }
 
+func (df *DatabaseFunctions) DeletePerson(ctx context.Context, fullName string) error {
+	const stmt = `DELETE FROM person WHERE full_name = $1`
+
+	_, err := df.db.Exec(ctx, stmt, fullName)
+	if err != nil {
+		return fmt.Errorf("calling delete_person: %w", err)
+	}
+
+	return nil
+}
+
 func scan(rows pgx.Rows) ([]map[string]any, error) {
 	fields := rows.FieldDescriptions()
 

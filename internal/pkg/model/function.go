@@ -81,7 +81,9 @@ func (f Function) subUpdate(stmt *pg_query.UpdateStmt) {
 }
 
 func (f Function) subDelete(stmt *pg_query.DeleteStmt) {
-	log.Fatal("delete statements not yet supported")
+	if stmt.WhereClause != nil {
+		subNode(stmt.WhereClause)
+	}
 }
 
 func subNode(n *pg_query.Node) {
