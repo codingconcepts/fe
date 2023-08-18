@@ -1,7 +1,9 @@
 package code
 
 import (
+	"bytes"
 	"fmt"
+	"go/format"
 	"io"
 	"strings"
 	"text/template"
@@ -44,7 +46,21 @@ func (cg *GoCodeGenerator) Generate(functions []model.Function, w io.Writer, pkg
 		AdditionalImports: additionalImports(functions),
 	}
 
-	return cg.t.Execute(w, data)
+	var buf bytes.Buffer
+	if err := cg.t.Execute(&buf, data); err != nil {
+		return fmt.Errorf("executing code template: %w", err)
+	}
+
+	code, err := format.Source(buf.Bytes())
+	if err != nil {
+		return fmt.Errorf("formatting code output: %w", err)
+	}
+
+	if _, err = w.Write(code); err != nil {
+		return fmt.Errorf("writing code to output file: %w", err)
+	}
+
+	return nil
 }
 
 // additionalImports adds supporting imports for types like time.Time etc.
