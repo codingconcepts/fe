@@ -23,6 +23,19 @@ func NewDatabaseFunctions(db *pgxpool.Pool) *DatabaseFunctions {
 	}
 }
 
+func (df *DatabaseFunctions) GetOldestPerson(ctx context.Context) (string, error) {
+	const stmt = `SELECT full_name FROM person ORDER BY date_of_birth DESC LIMIT 1`
+
+	row := df.db.QueryRow(ctx, stmt)
+
+	var result string
+	if err := row.Scan(&result); err != nil {
+		return "", fmt.Errorf("calling get_oldest_person: %w", err)
+	}
+
+	return result, nil
+}
+
 func (df *DatabaseFunctions) PeopleBornOn(ctx context.Context, d time.Time) (int64, error) {
 	const stmt = `SELECT count(*) FROM person WHERE date_of_birth = $1`
 
@@ -52,30 +65,6 @@ func (df *DatabaseFunctions) PeopleBetween(ctx context.Context, idFrom string, i
 	return results, nil
 }
 
-func (df *DatabaseFunctions) AddPerson(ctx context.Context, fullName string, dateOfBirth time.Time, country string) error {
-	const stmt = `INSERT INTO person (full_name, date_of_birth, country) VALUES ($1, $2, $3)`
-
-	_, err := df.db.Exec(ctx, stmt, fullName, dateOfBirth, country)
-	if err != nil {
-		return fmt.Errorf("calling add_person: %w", err)
-	}
-
-	return nil
-}
-
-func (df *DatabaseFunctions) GetOldestPerson(ctx context.Context) (string, error) {
-	const stmt = `SELECT full_name FROM person ORDER BY date_of_birth DESC LIMIT 1`
-
-	row := df.db.QueryRow(ctx, stmt)
-
-	var result string
-	if err := row.Scan(&result); err != nil {
-		return "", fmt.Errorf("calling get_oldest_person: %w", err)
-	}
-
-	return result, nil
-}
-
 func (df *DatabaseFunctions) PersonById(ctx context.Context, id string) (interface{}, error) {
 	const stmt = `SELECT id, country, full_name, date_of_birth FROM person WHERE id = $1`
 
@@ -87,6 +76,17 @@ func (df *DatabaseFunctions) PersonById(ctx context.Context, id string) (interfa
 	}
 
 	return result, nil
+}
+
+func (df *DatabaseFunctions) AddPerson(ctx context.Context, fullName string, dateOfBirth time.Time, country string) error {
+	const stmt = `INSERT INTO person (full_name, date_of_birth, country) VALUES ($1, $2, $3)`
+
+	_, err := df.db.Exec(ctx, stmt, fullName, dateOfBirth, country)
+	if err != nil {
+		return fmt.Errorf("calling add_person: %w", err)
+	}
+
+	return nil
 }
 
 func scan(rows pgx.Rows) ([]map[string]any, error) {
@@ -107,6 +107,7 @@ func scan(rows pgx.Rows) ([]map[string]any, error) {
 
 		for i, v := range scans {
 			if v != nil {
+				// Convert UUID into a string.
 				if fields[i].DataTypeOID == 2950 {
 					b := v.([16]byte)
 					v = fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
