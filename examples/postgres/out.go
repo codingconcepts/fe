@@ -133,6 +133,17 @@ func (df *DatabaseFunctions) NamesBetween(ctx context.Context, idFrom string, id
 	return results, nil
 }
 
+func (df *DatabaseFunctions) AllDataTypes(ctx context.Context, a int64, b int64, c int64, d float64, e float64, f float64, g float64, h float64, i bool, j string) error {
+	const stmt = ``
+
+	_, err := df.db.Exec(ctx, stmt, a, b, c, d, e, f, g, h, i, j)
+	if err != nil {
+		return fmt.Errorf("calling all_data_types: %w", err)
+	}
+
+	return nil
+}
+
 func scan(rows pgx.Rows) ([]map[string]any, error) {
 	fields := rows.FieldDescriptions()
 

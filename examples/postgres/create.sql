@@ -71,3 +71,20 @@ AS $$
     (full_name, date_of_birth, country);
 $$;
 SELECT add_person('new person', '2000-01-01', 'us');
+
+
+CREATE OR REPLACE FUNCTION all_data_types(
+  a smallint,
+  b integer,
+  c bigint,
+  d decimal,
+  e numeric,
+  f real,
+  g double precision,
+  h money,
+  i boolean,
+  j json
+) RETURNS VOID LANGUAGE SQL
+AS $$
+  
+$$;

@@ -20,5 +20,8 @@ run:
 harness:
 	go run examples/harness.go
 
+test:
+	go test ./... -v -cover
+
 clean:
 	docker ps -aq | xargs docker rm -f

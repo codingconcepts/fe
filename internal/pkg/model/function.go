@@ -223,10 +223,14 @@ func toCamelCase(s string) string {
 
 func toGoType(dbType string) string {
 	switch strings.ToLower(dbType) {
-	case "uuid", "varchar":
+	case "uuid", "varchar", "json":
 		return "string"
 	case "int", "int2", "int4", "int8":
 		return "int64"
+	case "numeric", "float4", "float8", "money":
+		return "float64"
+	case "bool":
+		return "bool"
 	case "date", "timestamp", "timestamptz":
 		return "time.Time"
 	case "record":
