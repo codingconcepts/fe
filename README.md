@@ -11,3 +11,7 @@ So, for example, to create Go code from the functions in a Postgres database:
 ``` sh
 $ fe postgres go --url 'postgres://postgres:password@localhost:5432/postgres?sslmode=disable'
 ```
+
+### Todos
+
+* Support delete functions

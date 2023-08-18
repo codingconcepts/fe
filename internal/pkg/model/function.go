@@ -59,9 +59,18 @@ func (f Function) SafeFunctionBody() string {
 
 func (f Function) subSelect(stmt *pg_query.SelectStmt) {
 	if stmt.WhereClause != nil {
-		aexpr := stmt.WhereClause.GetAExpr().Rexpr
+		node := stmt.WhereClause.Node
+		if aexpr := stmt.WhereClause.GetAExpr(); aexpr != nil {
+			node = aexpr.Rexpr.Node
+		}
 
-		switch x := aexpr.Node.(type) {
+		// TODO: DRY this out.
+		switch x := node.(type) {
+		case *pg_query.Node_BoolExpr:
+			for _, arg := range x.BoolExpr.Args {
+				subNode(arg.GetAExpr().Rexpr)
+			}
+
 		case *pg_query.Node_ColumnRef:
 			for _, field := range x.ColumnRef.Fields {
 				*field.GetString_() = pg_query.String{Sval: "999999999"}
@@ -75,8 +84,28 @@ func (f Function) subSelect(stmt *pg_query.SelectStmt) {
 			}
 
 		default:
-			log.Fatalf("unsupported type: %T", aexpr.Node)
+			log.Fatalf("unsupported type: %T", node)
 		}
+	}
+}
+
+func subNode(n *pg_query.Node) {
+	switch x := n.Node.(type) {
+	case *pg_query.Node_AConst:
+		switch x.AConst.Val.(type) {
+		case *pg_query.A_Const_Sval:
+			x.AConst.Val = &pg_query.A_Const_Sval{Sval: &pg_query.String{Sval: "999999999"}}
+		case *pg_query.A_Const_Ival:
+			x.AConst.Val = &pg_query.A_Const_Ival{Ival: &pg_query.Integer{Ival: 999999999}}
+		}
+	case *pg_query.Node_List:
+		for _, l := range x.List.Items {
+			subNode(l)
+		}
+	case *pg_query.Node_String_:
+		*n.GetString_() = pg_query.String{Sval: "999999999"}
+	case *pg_query.Node_Integer:
+		*n.GetInteger() = pg_query.Integer{Ival: 999999999}
 	}
 }
 
@@ -222,7 +251,7 @@ func toPascalCase(s string) string {
 }
 
 func (f Function) ToCamelCase() string {
-	return toCamelCase(f.ToPascalCase())
+	return toCamelCase(f.Name)
 }
 
 func toCamelCase(s string) string {

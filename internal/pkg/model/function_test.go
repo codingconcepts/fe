@@ -59,3 +59,28 @@ func TestToCamelCase(t *testing.T) {
 		})
 	}
 }
+
+func TestSafeFunctionBody(t *testing.T) {
+	cases := []struct {
+		name               string
+		inputStatement     string
+		expOutputStatement string
+	}{
+		{
+			name:               "select",
+			inputStatement:     "SELECT a, b, c FROM t WHERE d = 1 AND e BETWEEN 2 AND 3",
+			expOutputStatement: "SELECT a, b, c FROM t WHERE d = $1 AND e BETWEEN $2 AND $3",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			f := Function{
+				FunctionBody: c.inputStatement,
+			}
+
+			act := f.SafeFunctionBody()
+			assert.Equal(t, c.expOutputStatement, act)
+		})
+	}
+}
