@@ -178,7 +178,7 @@ func (f Function) LanguageReturnType(lang string) string {
 func (f Function) DefaultReturnValue(lang string) string {
 	switch strings.ToLower(lang) {
 	case "go":
-		return f.defaultValue(f.ReturnType)
+		return f.defaultValueGo(f.ReturnType)
 
 	default:
 		log.Fatalf("unimplemented language: %s", lang)
@@ -237,7 +237,7 @@ func toGoType(dbType string) string {
 	}
 }
 
-func (f Function) defaultValue(dbType string) string {
+func (f Function) defaultValueGo(dbType string) string {
 	if f.ReturnsSet {
 		return `nil`
 	}
