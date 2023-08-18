@@ -34,5 +34,3 @@ $ fe postgres go \
 ```
 
 ### Todos
-
-* Support delete functions

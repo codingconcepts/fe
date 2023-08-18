@@ -88,8 +88,18 @@ func TestSafeFunctionBody(t *testing.T) {
 		},
 		{
 			name:               "delete",
-			inputStatement:     "DELETE FROM person WHERE full_name = full_name",
-			expOutputStatement: "DELETE FROM person WHERE full_name = $1",
+			inputStatement:     "DELETE FROM t WHERE a = '1'",
+			expOutputStatement: "DELETE FROM t WHERE a = $1",
+		},
+		{
+			name:               "range",
+			inputStatement:     "SELECT * FROM t WHERE a < 1 AND b >= 2",
+			expOutputStatement: "SELECT * FROM t WHERE a < $1 AND b >= $2",
+		},
+		{
+			name:               "data types",
+			inputStatement:     "SELECT * FROM t WHERE a < 1 AND b < 1.1 AND c < '2000-01-01'",
+			expOutputStatement: "SELECT * FROM t WHERE a < $1 AND b < $2 AND c < $3",
 		},
 	}
 

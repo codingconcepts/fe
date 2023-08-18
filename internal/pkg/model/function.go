@@ -102,6 +102,8 @@ func subNode(n *pg_query.Node) {
 			x.AConst.Val = &pg_query.A_Const_Sval{Sval: &pg_query.String{Sval: "999999999"}}
 		case *pg_query.A_Const_Ival:
 			x.AConst.Val = &pg_query.A_Const_Ival{Ival: &pg_query.Integer{Ival: 999999999}}
+		case *pg_query.A_Const_Fval:
+			x.AConst.Val = &pg_query.A_Const_Fval{Fval: &pg_query.Float{Fval: "999999999"}}
 		}
 	case *pg_query.Node_AExpr:
 		subNode(x.AExpr.Rexpr)

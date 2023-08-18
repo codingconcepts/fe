@@ -23,6 +23,43 @@ func NewDatabaseFunctions(db *pgxpool.Pool) *DatabaseFunctions {
 	}
 }
 
+func (df *DatabaseFunctions) PeopleBetween(ctx context.Context, idFrom string, idTo string) ([]map[string]any, error) {
+	const stmt = `SELECT id, country, full_name, date_of_birth FROM person WHERE id BETWEEN $1 AND $2`
+
+	rows, err := df.db.Query(ctx, stmt, idFrom, idTo)
+	if err != nil {
+		return nil, fmt.Errorf("calling people_between: %w", err)
+	}
+
+	results, err := scan(rows)
+	if err != nil {
+		return nil, fmt.Errorf("calling people_between: %w", err)
+	}
+	return results, nil
+}
+
+func (df *DatabaseFunctions) AddPerson(ctx context.Context, fullName string, dateOfBirth time.Time, country string) error {
+	const stmt = `INSERT INTO person (full_name, date_of_birth, country) VALUES ($1, $2, $3)`
+
+	_, err := df.db.Exec(ctx, stmt, fullName, dateOfBirth, country)
+	if err != nil {
+		return fmt.Errorf("calling add_person: %w", err)
+	}
+
+	return nil
+}
+
+func (df *DatabaseFunctions) AllDataTypes(ctx context.Context, a int64, b int64, c int64, d float64, e float64, f float64, g float64, h float64, i bool, j string) error {
+	const stmt = ``
+
+	_, err := df.db.Exec(ctx, stmt, a, b, c, d, e, f, g, h, i, j)
+	if err != nil {
+		return fmt.Errorf("calling all_data_types: %w", err)
+	}
+
+	return nil
+}
+
 func (df *DatabaseFunctions) GetOldestPerson(ctx context.Context) (string, error) {
 	const stmt = `SELECT full_name FROM person ORDER BY date_of_birth DESC LIMIT 1`
 
@@ -69,50 +106,6 @@ func (df *DatabaseFunctions) PeopleBornOn(ctx context.Context, d time.Time) (int
 	return results[0], nil
 }
 
-func (df *DatabaseFunctions) PeopleBetween(ctx context.Context, idFrom string, idTo string) ([]map[string]any, error) {
-	const stmt = `SELECT id, country, full_name, date_of_birth FROM person WHERE id BETWEEN $1 AND $2`
-
-	rows, err := df.db.Query(ctx, stmt, idFrom, idTo)
-	if err != nil {
-		return nil, fmt.Errorf("calling people_between: %w", err)
-	}
-
-	results, err := scan(rows)
-	if err != nil {
-		return nil, fmt.Errorf("calling people_between: %w", err)
-	}
-	return results, nil
-}
-
-func (df *DatabaseFunctions) PersonById(ctx context.Context, id string) (map[string]any, error) {
-	const stmt = `SELECT id, country, full_name, date_of_birth FROM person WHERE id = $1`
-
-	rows, err := df.db.Query(ctx, stmt, id)
-	if err != nil {
-		return nil, fmt.Errorf("calling person_by_id: %w", err)
-	}
-
-	results, err := scan(rows)
-	if err != nil {
-		return nil, fmt.Errorf("calling person_by_id: %w", err)
-	}
-	if results == nil {
-		return nil, nil
-	}
-	return results[0], nil
-}
-
-func (df *DatabaseFunctions) AddPerson(ctx context.Context, fullName string, dateOfBirth time.Time, country string) error {
-	const stmt = `INSERT INTO person (full_name, date_of_birth, country) VALUES ($1, $2, $3)`
-
-	_, err := df.db.Exec(ctx, stmt, fullName, dateOfBirth, country)
-	if err != nil {
-		return fmt.Errorf("calling add_person: %w", err)
-	}
-
-	return nil
-}
-
 func (df *DatabaseFunctions) NamesBetween(ctx context.Context, idFrom string, idTo string) ([]string, error) {
 	const stmt = `SELECT full_name FROM person WHERE id BETWEEN $1 AND $2`
 
@@ -133,15 +126,22 @@ func (df *DatabaseFunctions) NamesBetween(ctx context.Context, idFrom string, id
 	return results, nil
 }
 
-func (df *DatabaseFunctions) AllDataTypes(ctx context.Context, a int64, b int64, c int64, d float64, e float64, f float64, g float64, h float64, i bool, j string) error {
-	const stmt = ``
+func (df *DatabaseFunctions) PersonById(ctx context.Context, id string) (map[string]any, error) {
+	const stmt = `SELECT id, country, full_name, date_of_birth FROM person WHERE id = $1`
 
-	_, err := df.db.Exec(ctx, stmt, a, b, c, d, e, f, g, h, i, j)
+	rows, err := df.db.Query(ctx, stmt, id)
 	if err != nil {
-		return fmt.Errorf("calling all_data_types: %w", err)
+		return nil, fmt.Errorf("calling person_by_id: %w", err)
 	}
 
-	return nil
+	results, err := scan(rows)
+	if err != nil {
+		return nil, fmt.Errorf("calling person_by_id: %w", err)
+	}
+	if results == nil {
+		return nil, nil
+	}
+	return results[0], nil
 }
 
 func (df *DatabaseFunctions) DeletePerson(ctx context.Context, fullName string) error {
