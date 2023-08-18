@@ -99,3 +99,96 @@ func TestSafeFunctionBody(t *testing.T) {
 		})
 	}
 }
+
+func TestArgs(t *testing.T) {
+	cases := []struct {
+		name       string
+		lang       string
+		argNames   []string
+		argTypes   []string
+		expArgsOut string
+	}{
+		{
+			name:       "single arg varchar",
+			lang:       "go",
+			argNames:   []string{"a"},
+			argTypes:   []string{"varchar"},
+			expArgsOut: "a string",
+		},
+		{
+			name:       "single arg uuid",
+			lang:       "go",
+			argNames:   []string{"a"},
+			argTypes:   []string{"uuid"},
+			expArgsOut: "a string",
+		},
+		{
+			name:       "single arg int",
+			lang:       "go",
+			argNames:   []string{"a"},
+			argTypes:   []string{"int"},
+			expArgsOut: "a int64",
+		},
+		{
+			name:       "single arg int2",
+			lang:       "go",
+			argNames:   []string{"a"},
+			argTypes:   []string{"int2"},
+			expArgsOut: "a int64",
+		},
+		{
+			name:       "single arg int4",
+			lang:       "go",
+			argNames:   []string{"a"},
+			argTypes:   []string{"int4"},
+			expArgsOut: "a int64",
+		},
+		{
+			name:       "single arg int8",
+			lang:       "go",
+			argNames:   []string{"a"},
+			argTypes:   []string{"int8"},
+			expArgsOut: "a int64",
+		},
+		{
+			name:       "single arg date",
+			lang:       "go",
+			argNames:   []string{"a"},
+			argTypes:   []string{"date"},
+			expArgsOut: "a time.Time",
+		},
+		{
+			name:       "single arg timestamp",
+			lang:       "go",
+			argNames:   []string{"a"},
+			argTypes:   []string{"timestamp"},
+			expArgsOut: "a time.Time",
+		},
+		{
+			name:       "single arg timestamptz",
+			lang:       "go",
+			argNames:   []string{"a"},
+			argTypes:   []string{"timestamptz"},
+			expArgsOut: "a time.Time",
+		},
+		{
+			name:       "single arg record",
+			lang:       "go",
+			argNames:   []string{"a"},
+			argTypes:   []string{"record"},
+			expArgsOut: "a map[string]any",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			f := Function{
+				ArgNames: c.argNames,
+				ArgTypes: c.argTypes,
+			}
+
+			act := f.Args(c.lang)
+			assert.Equal(t, c.expArgsOut, act)
+		})
+	}
+}
