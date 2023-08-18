@@ -12,6 +12,7 @@ INSERT INTO person (id, country, full_name, date_of_birth) VALUES
   ('c9661cf0-e0e8-4ddb-9bb7-bfcda1aec90f', 'fr', 'c', '2018-01-01'),
   ('d86506a2-e186-4b89-97be-3294cb86d53a', 'us', 'd', '2003-01-01');
 
+
 CREATE OR REPLACE FUNCTION get_oldest_person() RETURNS VARCHAR
 LANGUAGE SQL
 AS $$
@@ -22,6 +23,7 @@ AS $$
 $$;
 SELECT get_oldest_person();
 
+
 CREATE OR REPLACE FUNCTION people_born_on(d DATE) RETURNS INT
 LANGUAGE SQL
 AS $$
@@ -30,6 +32,7 @@ AS $$
   WHERE date_of_birth = d;
 $$;
 SELECT people_born_on('1987-01-01');
+
 
 CREATE OR REPLACE FUNCTION people_between(id_from UUID, id_to UUID) RETURNS SETOF RECORD
 LANGUAGE SQL
@@ -40,6 +43,17 @@ AS $$
 $$;
 SELECT people_between('a58933a1-c24f-43d9-bb53-6a1aa3170a12', 'c9661cf0-e0e8-4ddb-9bb7-bfcda1aec90f');
 
+
+CREATE OR REPLACE FUNCTION names_between(id_from UUID, id_to UUID) RETURNS SETOF VARCHAR
+LANGUAGE SQL
+AS $$
+  SELECT full_name
+  FROM person
+  WHERE id BETWEEN id_from AND id_to;
+$$;
+SELECT names_between('a58933a1-c24f-43d9-bb53-6a1aa3170a12', 'c9661cf0-e0e8-4ddb-9bb7-bfcda1aec90f');
+
+
 CREATE OR REPLACE FUNCTION person_by_id(id UUID) RETURNS RECORD
 LANGUAGE SQL
 AS $$
@@ -48,6 +62,7 @@ AS $$
   WHERE id = id;
 $$;
 SELECT person_by_id('a58933a1-c24f-43d9-bb53-6a1aa3170a12');
+
 
 CREATE OR REPLACE FUNCTION add_person(full_name VARCHAR(255), date_of_birth DATE, country VARCHAR(255)) RETURNS VOID
 LANGUAGE SQL

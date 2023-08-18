@@ -25,6 +25,11 @@ type Function struct {
 	FunctionBody string
 }
 
+// ReturnsRecord returns true if this function returns one or move records.
+func (f Function) ReturnsRecord() bool {
+	return strings.EqualFold(f.ReturnType, "record")
+}
+
 func (f Function) SafeFunctionBody() string {
 	tree, err := pg_query.Parse(f.FunctionBody)
 	if err != nil {
@@ -185,7 +190,7 @@ func (f Function) LanguageReturnType(lang string) string {
 func (f Function) DefaultReturnValue(lang string) string {
 	switch strings.ToLower(lang) {
 	case "go":
-		return defaultValue(f.ReturnType)
+		return f.defaultValue(f.ReturnType)
 
 	default:
 		log.Fatalf("unimplemented language: %s", lang)
@@ -237,14 +242,18 @@ func toGoType(dbType string) string {
 	case "date", "timestamp", "timestamptz":
 		return "time.Time"
 	case "record":
-		return "interface{}"
+		return "map[string]any"
 	default:
 		log.Fatalf("unimplemented type: %s", dbType)
 		return ""
 	}
 }
 
-func defaultValue(dbType string) string {
+func (f Function) defaultValue(dbType string) string {
+	if f.ReturnsSet {
+		return `nil`
+	}
+
 	switch strings.ToLower(dbType) {
 	case "uuid", "varchar":
 		return `""`

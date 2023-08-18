@@ -26,30 +26,50 @@ func NewDatabaseFunctions(db *pgxpool.Pool) *DatabaseFunctions {
 func (df *DatabaseFunctions) GetOldestPerson(ctx context.Context) (string, error) {
 	const stmt = `SELECT full_name FROM person ORDER BY date_of_birth DESC LIMIT 1`
 
-	row := df.db.QueryRow(ctx, stmt)
-
-	var result string
-	if err := row.Scan(&result); err != nil {
+	rows, err := df.db.Query(ctx, stmt)
+	if err != nil {
 		return "", fmt.Errorf("calling get_oldest_person: %w", err)
 	}
 
-	return result, nil
+	var results []string
+	for rows.Next() {
+		var result string
+		if err := rows.Scan(&result); err != nil {
+			return "", fmt.Errorf("calling get_oldest_person: %w", err)
+		}
+		results = append(results, result)
+	}
+
+	if results == nil {
+		return "", nil
+	}
+	return results[0], nil
 }
 
 func (df *DatabaseFunctions) PeopleBornOn(ctx context.Context, d time.Time) (int64, error) {
 	const stmt = `SELECT count(*) FROM person WHERE date_of_birth = $1`
 
-	row := df.db.QueryRow(ctx, stmt, d)
-
-	var result int64
-	if err := row.Scan(&result); err != nil {
+	rows, err := df.db.Query(ctx, stmt, d)
+	if err != nil {
 		return 0, fmt.Errorf("calling people_born_on: %w", err)
 	}
 
-	return result, nil
+	var results []int64
+	for rows.Next() {
+		var result int64
+		if err := rows.Scan(&result); err != nil {
+			return 0, fmt.Errorf("calling people_born_on: %w", err)
+		}
+		results = append(results, result)
+	}
+
+	if results == nil {
+		return 0, nil
+	}
+	return results[0], nil
 }
 
-func (df *DatabaseFunctions) PeopleBetween(ctx context.Context, idFrom string, idTo string) (interface{}, error) {
+func (df *DatabaseFunctions) PeopleBetween(ctx context.Context, idFrom string, idTo string) ([]map[string]any, error) {
 	const stmt = `SELECT id, country, full_name, date_of_birth FROM person WHERE id BETWEEN $1 AND $2`
 
 	rows, err := df.db.Query(ctx, stmt, idFrom, idTo)
@@ -61,21 +81,25 @@ func (df *DatabaseFunctions) PeopleBetween(ctx context.Context, idFrom string, i
 	if err != nil {
 		return nil, fmt.Errorf("calling people_between: %w", err)
 	}
-
 	return results, nil
 }
 
-func (df *DatabaseFunctions) PersonById(ctx context.Context, id string) (interface{}, error) {
+func (df *DatabaseFunctions) PersonById(ctx context.Context, id string) (map[string]any, error) {
 	const stmt = `SELECT id, country, full_name, date_of_birth FROM person WHERE id = $1`
 
-	row := df.db.QueryRow(ctx, stmt, id)
-
-	var result interface{}
-	if err := row.Scan(&result); err != nil {
+	rows, err := df.db.Query(ctx, stmt, id)
+	if err != nil {
 		return nil, fmt.Errorf("calling person_by_id: %w", err)
 	}
 
-	return result, nil
+	results, err := scan(rows)
+	if err != nil {
+		return nil, fmt.Errorf("calling person_by_id: %w", err)
+	}
+	if results == nil {
+		return nil, nil
+	}
+	return results[0], nil
 }
 
 func (df *DatabaseFunctions) AddPerson(ctx context.Context, fullName string, dateOfBirth time.Time, country string) error {
@@ -87,6 +111,26 @@ func (df *DatabaseFunctions) AddPerson(ctx context.Context, fullName string, dat
 	}
 
 	return nil
+}
+
+func (df *DatabaseFunctions) NamesBetween(ctx context.Context, idFrom string, idTo string) ([]string, error) {
+	const stmt = `SELECT full_name FROM person WHERE id BETWEEN $1 AND $2`
+
+	rows, err := df.db.Query(ctx, stmt, idFrom, idTo)
+	if err != nil {
+		return nil, fmt.Errorf("calling names_between: %w", err)
+	}
+
+	var results []string
+	for rows.Next() {
+		var result string
+		if err := rows.Scan(&result); err != nil {
+			return nil, fmt.Errorf("calling names_between: %w", err)
+		}
+		results = append(results, result)
+	}
+
+	return results, nil
 }
 
 func scan(rows pgx.Rows) ([]map[string]any, error) {
@@ -107,7 +151,6 @@ func scan(rows pgx.Rows) ([]map[string]any, error) {
 
 		for i, v := range scans {
 			if v != nil {
-				// Convert UUID into a string.
 				if fields[i].DataTypeOID == 2950 {
 					b := v.([16]byte)
 					v = fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])

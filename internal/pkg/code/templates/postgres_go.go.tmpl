@@ -24,12 +24,11 @@ func NewDatabaseFunctions(db *pgxpool.Pool) *DatabaseFunctions {
 }
 
 {{ range .Functions }}
-func (df *DatabaseFunctions) {{.ToPascalCase}} (ctx context.Context {{- if .HasArgs -}}, {{.Args "go"}} {{- end}}) ({{- if .ReturnsValue}}{{.LanguageReturnType "go"}}, {{end -}} error) {
+func (df *DatabaseFunctions) {{.ToPascalCase}} (ctx context.Context {{- if .HasArgs -}}, {{.Args "go"}} {{- end}}) ({{- if .ReturnsValue}}{{if .ReturnsSet}}[]{{end}}{{.LanguageReturnType "go"}}, {{end -}} error) {
   const stmt = `{{ .SafeFunctionBody -}}`
 
   {{if .ReturnsValue -}}
-    {{- /* The function returns a SETOF something; scan all rows. */ -}}
-    {{if .ReturnsSet -}}
+    {{if .ReturnsRecord -}}
     rows, err := df.db.Query(ctx, stmt {{- if .HasArgs -}}, {{.QueryArgs "go"}} {{- end}})
     if err != nil {
       return {{.DefaultReturnValue "go"}}, fmt.Errorf("calling {{.Name}}: %w", err)
@@ -40,19 +39,33 @@ func (df *DatabaseFunctions) {{.ToPascalCase}} (ctx context.Context {{- if .HasA
       return {{.DefaultReturnValue "go"}}, fmt.Errorf("calling {{.Name}}: %w", err)
     }
 
-    return results, nil
 
-    {{- /* The function returns one of something; scan single row. */ -}}
     {{- else -}}
-    row := df.db.QueryRow(ctx, stmt {{- if .HasArgs -}}, {{.QueryArgs "go"}} {{- end}})
-    
-    var result {{.LanguageReturnType "go"}}
-    if err := row.Scan(&result); err != nil {
+    rows, err := df.db.Query(ctx, stmt {{- if .HasArgs -}}, {{.QueryArgs "go"}} {{- end}})
+    if err != nil {
       return {{.DefaultReturnValue "go"}}, fmt.Errorf("calling {{.Name}}: %w", err)
     }
 
-    return result, nil
+    var results []{{.LanguageReturnType "go"}}
+    for rows.Next() {
+      var result {{.LanguageReturnType "go"}}
+      if err := rows.Scan(&result); err != nil {
+        return {{.DefaultReturnValue "go"}}, fmt.Errorf("calling {{.Name}}: %w", err)
+      }
+      results = append(results, result)
+    }
+    
     {{end -}}
+
+    {{if .ReturnsSet}}
+    return results, nil
+    {{else}}
+    if results == nil {
+      return {{.DefaultReturnValue "go"}}, nil
+    }
+    return results[0], nil
+    {{end -}}
+
   {{- else -}}
     _, err := df.db.Exec(ctx, stmt {{- if .HasArgs -}}, {{.QueryArgs "go"}} {{- end}})
     if err != nil {

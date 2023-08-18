@@ -14,5 +14,4 @@ $ fe postgres go --url 'postgres://postgres:password@localhost:5432/postgres?ssl
 
 ### Todos
 
-* Support for SETOF scalar values (e.g. `SETOF VARCHAR`)
 * Run gofmt before saving output file
