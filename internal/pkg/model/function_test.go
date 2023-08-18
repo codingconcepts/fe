@@ -71,6 +71,16 @@ func TestSafeFunctionBody(t *testing.T) {
 			inputStatement:     `SELECT a, b, c FROM t WHERE d = '1' AND e BETWEEN 2 AND 3`,
 			expOutputStatement: `SELECT a, b, c FROM t WHERE d = $1 AND e BETWEEN $2 AND $3`,
 		},
+		{
+			name:               "insert single-row dml",
+			inputStatement:     "INSERT INTO t (a, b, c) VALUES (1, 2, 3)",
+			expOutputStatement: "INSERT INTO t (a, b, c) VALUES ($1, $2, $3)",
+		},
+		{
+			name:               "insert multi-row dml",
+			inputStatement:     "INSERT INTO t (a, b, c) VALUES (1, 2, 3), (4, 5, 6)",
+			expOutputStatement: "INSERT INTO t (a, b, c) VALUES ($1, $2, $3), ($4, $5, $6)",
+		},
 	}
 
 	for _, c := range cases {

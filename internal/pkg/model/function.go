@@ -89,32 +89,10 @@ func (f Function) subSelect(stmt *pg_query.SelectStmt) {
 	}
 }
 
-func subNode(n *pg_query.Node) {
-	switch x := n.Node.(type) {
-	case *pg_query.Node_AConst:
-		switch x.AConst.Val.(type) {
-		case *pg_query.A_Const_Sval:
-			x.AConst.Val = &pg_query.A_Const_Sval{Sval: &pg_query.String{Sval: "999999999"}}
-		case *pg_query.A_Const_Ival:
-			x.AConst.Val = &pg_query.A_Const_Ival{Ival: &pg_query.Integer{Ival: 999999999}}
-		}
-	case *pg_query.Node_List:
-		for _, l := range x.List.Items {
-			subNode(l)
-		}
-	case *pg_query.Node_String_:
-		*n.GetString_() = pg_query.String{Sval: "999999999"}
-	case *pg_query.Node_Integer:
-		*n.GetInteger() = pg_query.Integer{Ival: 999999999}
-	}
-}
-
 func (f Function) subInsert(stmt *pg_query.InsertStmt) {
 	for _, vl := range stmt.SelectStmt.GetSelectStmt().ValuesLists {
 		for _, i := range vl.GetList().Items {
-			for _, f := range i.GetColumnRef().Fields {
-				subNode(f)
-			}
+			subNode(i)
 		}
 	}
 }
@@ -151,6 +129,30 @@ func (f Function) subUpdate(stmt *pg_query.UpdateStmt) {
 
 func (f Function) subDelete(stmt *pg_query.DeleteStmt) {
 	log.Fatal("delete statements not yet supported")
+}
+
+func subNode(n *pg_query.Node) {
+	switch x := n.Node.(type) {
+	case *pg_query.Node_ColumnRef:
+		for _, f := range x.ColumnRef.Fields {
+			subNode(f)
+		}
+	case *pg_query.Node_AConst:
+		switch x.AConst.Val.(type) {
+		case *pg_query.A_Const_Sval:
+			x.AConst.Val = &pg_query.A_Const_Sval{Sval: &pg_query.String{Sval: "999999999"}}
+		case *pg_query.A_Const_Ival:
+			x.AConst.Val = &pg_query.A_Const_Ival{Ival: &pg_query.Integer{Ival: 999999999}}
+		}
+	case *pg_query.Node_List:
+		for _, l := range x.List.Items {
+			subNode(l)
+		}
+	case *pg_query.Node_String_:
+		*n.GetString_() = pg_query.String{Sval: "999999999"}
+	case *pg_query.Node_Integer:
+		*n.GetInteger() = pg_query.Integer{Ival: 999999999}
+	}
 }
 
 func (f Function) subNodeValues(nodes []*pg_query.Node) {
