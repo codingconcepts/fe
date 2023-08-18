@@ -178,6 +178,13 @@ func TestArgs(t *testing.T) {
 			argTypes:   []string{"record"},
 			expArgsOut: "a map[string]any",
 		},
+		{
+			name:       "multiple args",
+			lang:       "go",
+			argNames:   []string{"a", "b", "c"},
+			argTypes:   []string{"uuid", "int", "date"},
+			expArgsOut: "a string, b int64, c time.Time",
+		},
 	}
 
 	for _, c := range cases {
