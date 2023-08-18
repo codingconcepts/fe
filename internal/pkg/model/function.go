@@ -113,7 +113,7 @@ func (f Function) subInsert(stmt *pg_query.InsertStmt) {
 	for _, vl := range stmt.SelectStmt.GetSelectStmt().ValuesLists {
 		for _, i := range vl.GetList().Items {
 			for _, f := range i.GetColumnRef().Fields {
-				*f.GetString_() = pg_query.String{Sval: "999999999"}
+				subNode(f)
 			}
 		}
 	}
@@ -168,7 +168,7 @@ func subArgNumbers(stmt string) string {
 		return fmt.Sprintf("$%d", c)
 	}
 
-	re := regexp.MustCompile(`"?999999999"?`)
+	re := regexp.MustCompile(`["']?999999999["']?`)
 	return re.ReplaceAllStringFunc(stmt, next)
 }
 

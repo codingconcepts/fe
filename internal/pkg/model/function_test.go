@@ -68,8 +68,8 @@ func TestSafeFunctionBody(t *testing.T) {
 	}{
 		{
 			name:               "select",
-			inputStatement:     "SELECT a, b, c FROM t WHERE d = 1 AND e BETWEEN 2 AND 3",
-			expOutputStatement: "SELECT a, b, c FROM t WHERE d = $1 AND e BETWEEN $2 AND $3",
+			inputStatement:     `SELECT a, b, c FROM t WHERE d = '1' AND e BETWEEN 2 AND 3`,
+			expOutputStatement: `SELECT a, b, c FROM t WHERE d = $1 AND e BETWEEN $2 AND $3`,
 		},
 	}
 
